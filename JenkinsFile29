@@ -1,0 +1,64 @@
+pipeline{
+    agent any
+    tools{
+        maven "maven3.8.6"
+    }
+    stages{
+        stage('1getcode'){
+            steps{
+                git credentialsId: 'githubdetails', url: 'https://github.com/saheedgiwa33/maven-web-application.git'
+            }
+        }
+        stage('2testing&building'){
+            steps{
+                sh "mvn clean package"
+            }
+        }
+        stage('3codestaticanalysis'){
+            steps{
+                sh "mvn sonar:sonar"
+            }
+        }
+        stage('4Artifactsbackup'){
+            steps{
+                sh "mvn deploy"
+            }
+        }
+        stage('5deploytoUAT'){
+            steps{
+                deploy adapters: [tomcat8(credentialsId: 'tomtom', path: '', url: 'http://34.203.223.48:8080/manager/')], contextPath: null, war: 'target/*war'
+            }
+        }
+        stage('6qualityGate'){
+            steps{
+                timeout(time:3, unit:'DAYS'){
+                    input message:'please review and approve'
+                }
+            }
+        }
+        stage('7deployToProduction'){
+            steps{
+                deploy adapters: [tomcat8(credentialsId: 'tomtom', path: '', url: 'http://34.203.223.48:8080/manager/')], contextPath: null, war: 'target/*war'
+            }
+        }
+        
+    }
+    post{
+        always{
+            emailext body: '''Hi team,
+the build is a success. Hurrah!!!''', recipientProviders: [developers()], subject: 'Build', to: 'giwasaheed85@yahoo.com'
+        }
+        success{emailext body: '''Hi team,
+the build is a success. Hurrah!!!''', recipientProviders: [developers()], subject: 'Build', to: 'giwasaheed85@yahoo.com'
+            
+        }
+        failure{emailext body: '''Hi team,
+the build is a success. Hurrah!!!''', recipientProviders: [developers()], subject: 'Build', to: 'giwasaheed85@yahoo.com'
+            
+        }
+    }
+    
+        
+            
+   
+}
